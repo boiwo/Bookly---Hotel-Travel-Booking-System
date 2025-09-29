@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Calendar, MapPin, Users, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { Calendar,  Users, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { Booking } from '../../types';
 import { bookings as mockBookings } from '../../data/mockData';
 
