@@ -61,8 +61,7 @@ SQLite (default DB, can switch to Postgres/MySQL)
 Frontend
 
 React (Vite)
-
-TypeScript
+Javascript
 
 Tailwind CSS
 
