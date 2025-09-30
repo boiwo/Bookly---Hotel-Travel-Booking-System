@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import HotelCard from "./HotelCard";
@@ -42,8 +41,8 @@ const HotelsPage: React.FC = () => {
   const filteredHotels = useMemo(() => {
     return hotels.filter((hotel) => {
       return (
-        (!destination ||
-          hotel.location.toLowerCase().includes(destination.toLowerCase()))
+        !destination ||
+        hotel.location.toLowerCase().includes(destination.toLowerCase())
       );
     });
   }, [hotels, destination]);
@@ -65,10 +64,12 @@ const HotelsPage: React.FC = () => {
         )}
 
         {loading ? (
-          <div className="text-center py-12 text-gray-500">Loading hotels...</div>
+          <div className="text-center py-12 text-gray-500">
+            Loading hotels...
+          </div>
         ) : filteredHotels.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredHotels.map((hotel) => (
+            {filteredHotels.slice(0, 3).map((hotel) => (
               <HotelCard key={hotel.id} hotel={hotel} />
             ))}
           </div>

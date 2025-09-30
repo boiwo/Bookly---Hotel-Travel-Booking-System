@@ -179,3 +179,5 @@ const HotelDetailsPage: React.FC = () => {
 };
 
 export default HotelDetailsPage;
+
+
