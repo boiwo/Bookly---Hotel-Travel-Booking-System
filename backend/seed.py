@@ -1,45 +1,39 @@
-
+# seed.py
 from app import app, db, Hotel
 
-HOTELS = [
-    {
-        "name": "Sunset Resort",
-        "location": "Mombasa",
-        "price": 120,
-        "description": "Beachside resort with ocean views",
-        "image_url": "https://picsum.photos/id/1018/600/400"
-    },
-    {
-        "name": "Mountain Lodge",
-        "location": "Naivasha",
-        "price": 90,
-        "description": "Cozy mountain view retreat",
-        "image_url": "https://picsum.photos/id/1015/600/400"
-    },
-    {
-        "name": "City Inn",
-        "location": "Nairobi",
-        "price": 75,
-        "description": "Affordable city stay close to transport",
-        "image_url": "https://picsum.photos/id/1025/600/400"
-    },
-    {
-        "name": "Lakeview Hotel",
-        "location": "Kisumu",
-        "price": 110,
-        "description": "Relax by the lakeside with amazing sunsets",
-        "image_url": "https://picsum.photos/id/1020/600/400"
-    },
-]
-
 def seed_hotels():
-    with app.app_context():
-        db.create_all()
-        for h in HOTELS:
-            if not Hotel.query.filter_by(name=h["name"]).first():
-                db.session.add(Hotel(**h))
-        db.session.commit()
-        print("✅ Hotels seeded!")
+    # Drop and recreate tables
+    db.drop_all()
+    db.create_all()
+
+    hotels = [
+        Hotel(
+            name="Sunset Resort",
+            location="Mombasa",
+            price=120,
+            description="Beachside resort",
+            image_url="https://images.unsplash.com/photo-1667125095636-dce94dcbdd96?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTV8fGhvdGVsJTIwcm9vbXxlbnwwfHwwfHx8MA%3D%3D"
+        ),
+        Hotel(
+            name="Mountain Lodge",
+            location="Naivasha",
+            price=90,
+            description="Cozy mountain view",
+            image_url="https://images.unsplash.com/photo-1660731513683-4cb0c9ac09b8?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MzV8fGhvdGVsJTIwcm9vbXxlbnwwfHwwfHx8MA%3D%3D"
+        ),
+        Hotel(
+            name="City Inn",
+            location="Nairobi",
+            price=75,
+            description="Affordable city stay",
+            image_url="https://images.unsplash.com/photo-1559414059-34fe0a59e57a?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NDN8fGhvdGVsJTIwcm9vbXxlbnwwfHwwfHx8MA%3D%3D"
+        ),
+    ]
+
+    db.session.bulk_save_objects(hotels)
+    db.session.commit()
+    print("✅ Hotels seeded successfully!")
 
 if __name__ == "__main__":
-    seed_hotels()
+    with app.app_context():  # 🔑 fix here
+        seed_hotels()
