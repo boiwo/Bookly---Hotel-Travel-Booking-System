@@ -87,3 +87,7 @@ const HotelsPage: React.FC = () => {
 export default HotelsPage;
 
 
+
+
+
+

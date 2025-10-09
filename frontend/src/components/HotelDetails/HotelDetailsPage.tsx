@@ -1,177 +1,154 @@
-import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { Star, MapPin, Wifi, Car, Utensils, Camera, ArrowLeft } from 'lucide-react';
-import { hotels, reviews } from '../../data/mockData';
-import BookingForm from './BookingForm';
+
+import React, { useEffect, useState } from "react";
+import { useParams, useLocation, Link } from "react-router-dom";
+import { MapPin, Wifi, Car, Utensils, ArrowLeft } from "lucide-react";
+import BookingForm from "./BookingForm";
+
+// Hotel interface
+interface Hotel {
+  id: number;
+  name: string;
+  description: string;
+  location: string;
+  price: number;
+  image_url: string;
+  amenities?: string[];
+  images?: string[];
+}
+
+// Example local hotels
+const localHotels: Hotel[] = [
+  {
+    id: 1,
+    name: "Grand Palace Hotel",
+    location: "Paris, France",
+    price: 229,
+    description: "Luxury hotel in the heart of Paris with stunning views of the Eiffel Tower. Experience elegance.",
+    image_url: "https://images.pexels.com/photos/258154/pexels-photo-258154.jpeg?auto=compress&cs=tinysrgb&w=800",
+    amenities: ["WiFi", "Parking", "Restaurant"],
+  },
+  {
+    id: 2,
+    name: "Ocean Breeze Resort",
+    location: "Maldives",
+    price: 599,
+    description: "Paradise found in the Maldives. Overwater bungalows with direct access to crystal clear",
+    image_url: "https://images.pexels.com/photos/237272/pexels-photo-237272.jpeg?auto=compress&cs=tinysrgb&w=800",
+    amenities: ["WiFi", "Parking"],
+  },
+  {
+    id: 3,
+    name: "Urban Chic Hotel",
+    location: "New York, USA",
+    price: 599,
+    description: "Modern design meets urban sophistication in the heart of Manhattan. Steps from Times Square.",
+    image_url: "https://images.pexels.com/photos/164595/pexels-photo-164595.jpeg?auto=compress&cs=tinysrgb&w=800",
+    amenities: ["WiFi", "Parking"],
+  },
+  
+];
 
 const HotelDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  
-  const hotel = hotels.find(h => h.id === id);
-  const hotelReviews = reviews.filter(r => r.hotelId === id);
+  const location = useLocation();
 
-  if (!hotel) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500 text-lg">Hotel not found</p>
-      </div>
-    );
-  }
+  const [hotel, setHotel] = useState<Hotel | null>(location.state?.hotel || null);
+  const [loading, setLoading] = useState(!hotel);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+
+  useEffect(() => {
+    if (!hotel && id) {
+      setLoading(true);
+
+      // Try local data first
+      const found = localHotels.find(h => h.id === Number(id)) || null;
+      if (found) {
+        setHotel(found);
+        setLoading(false);
+      } else {
+        // Optional: fetch from backend if not in local data
+        fetch(`http://localhost:5000/api/hotels/${id}`)
+          .then(res => {
+            if (!res.ok) throw new Error("Hotel not found");
+            return res.json();
+          })
+          .then(data => setHotel(data))
+          .catch(err => {
+            console.error(err);
+            setHotel(null);
+          })
+          .finally(() => setLoading(false));
+      }
+    }
+  }, [id, hotel]);
+
+  if (loading) return <p className="p-8">Loading hotel details...</p>;
+  if (!hotel) return <p className="p-8">Hotel not found</p>;
+
+  const images = hotel.images && hotel.images.length > 0
+    ? hotel.images
+    : [hotel.image_url];
+
+  const mainImage = images[selectedImageIndex];
 
   const getAmenityIcon = (amenity: string) => {
-    if (amenity.toLowerCase().includes('wifi')) return <Wifi className="h-5 w-5" />;
-    if (amenity.toLowerCase().includes('parking')) return <Car className="h-5 w-5" />;
-    if (amenity.toLowerCase().includes('restaurant')) return <Utensils className="h-5 w-5" />;
-    return null;
+    if (amenity.toLowerCase().includes("wifi")) return <Wifi className="h-5 w-5" />;
+    if (amenity.toLowerCase().includes("parking")) return <Car className="h-5 w-5" />;
+    if (amenity.toLowerCase().includes("restaurant")) return <Utensils className="h-5 w-5" />;
+    return <div className="w-5 h-5 bg-blue-100 rounded" />;
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Breadcrumb */}
-        <div className="flex items-center mb-6">
-          <Link to="/hotels" className="text-blue-600 hover:text-blue-700 flex items-center">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Hotels
-          </Link>
+    <div className="min-h-screen bg-gray-50 p-8">
+      <Link to="/hotels" className="text-blue-600 hover:text-blue-700 flex items-center mb-6">
+        <ArrowLeft className="h-4 w-4 mr-1" /> Back to Hotels
+      </Link>
+
+      <h1 className="text-3xl font-bold mb-4">{hotel.name}</h1>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-6">
+          {/* Main Image */}
+          <img src={mainImage} alt={hotel.name} className="w-full h-72 object-cover rounded-lg" />
+
+          {/* Thumbnail Gallery */}
+          {images.length > 1 && (
+            <div className="flex space-x-2 mt-2 overflow-x-auto">
+              {images.map((img, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setSelectedImageIndex(idx)}
+                  className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors ${
+                    selectedImageIndex === idx ? "border-blue-500" : "border-gray-200"
+                  }`}
+                >
+                  <img src={img} alt={`${hotel.name} ${idx + 1}`} className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+
+          <p className="flex items-center gap-1"><MapPin className="h-4 w-4" /> {hotel.location}</p>
+          <p className="font-semibold">💰 ${hotel.price} / night</p>
+          <div className="prose max-w-none mt-4">{hotel.description}</div>
+
+          {hotel.amenities && hotel.amenities.length > 0 && (
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h3 className="text-xl font-semibold mb-4">Amenities</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {hotel.amenities.map((amenity, idx) => (
+                  <div key={idx} className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
+                    {getAmenityIcon(amenity)}
+                    <span>{amenity}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Image Gallery */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-              <div className="relative h-96">
-                <img
-                  src={hotel.images[selectedImageIndex]}
-                  alt={hotel.name}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-4 left-4 flex space-x-2">
-                  {hotel.images.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setSelectedImageIndex(index)}
-                      className={`w-3 h-3 rounded-full transition-colors ${
-                        selectedImageIndex === index ? 'bg-white' : 'bg-white/50'
-                      }`}
-                    />
-                  ))}
-                </div>
-                <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-full p-2">
-                  <Camera className="h-5 w-5 text-gray-700" />
-                </div>
-              </div>
-              
-              <div className="flex space-x-2 p-4 overflow-x-auto">
-                {hotel.images.map((image, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setSelectedImageIndex(index)}
-                    className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors ${
-                      selectedImageIndex === index ? 'border-blue-500' : 'border-gray-200'
-                    }`}
-                  >
-                    <img src={image} alt={`${hotel.name} ${index + 1}`} className="w-full h-full object-cover" />
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Hotel Info */}
-            <div className="bg-white rounded-xl shadow-lg p-8">
-              <div className="flex items-start justify-between mb-6">
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">{hotel.name}</h1>
-                  <div className="flex items-center text-gray-600 mb-4">
-                    <MapPin className="h-5 w-5 mr-1" />
-                    <span className="text-lg">{hotel.location}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="flex">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`h-5 w-5 ${
-                            i < Math.floor(hotel.rating) 
-                              ? 'text-yellow-500 fill-current' 
-                              : 'text-gray-300'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    <span className="text-lg font-semibold ml-2">{hotel.rating}</span>
-                    <span className="text-gray-600 ml-2">({hotel.reviews} reviews)</span>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-3xl font-bold text-blue-600">${hotel.price}</div>
-                  <div className="text-gray-600">per night</div>
-                </div>
-              </div>
-
-              <div className="prose max-w-none">
-                <h3 className="text-xl font-semibold mb-3">About this hotel</h3>
-                <p className="text-gray-600 leading-relaxed">{hotel.description}</p>
-              </div>
-            </div>
-
-            {/* Amenities */}
-            <div className="bg-white rounded-xl shadow-lg p-8">
-              <h3 className="text-xl font-semibold mb-6">Amenities</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {hotel.amenities.map((amenity, index) => (
-                  <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                    {getAmenityIcon(amenity) || <div className="w-5 h-5 bg-blue-100 rounded" />}
-                    <span className="text-gray-700">{amenity}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Reviews */}
-            <div className="bg-white rounded-xl shadow-lg p-8">
-              <h3 className="text-xl font-semibold mb-6">Guest Reviews</h3>
-              <div className="space-y-6">
-                {hotelReviews.map((review) => (
-                  <div key={review.id} className="border-b border-gray-200 pb-6 last:border-b-0">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                          <span className="text-blue-600 font-semibold">
-                            {review.userName.charAt(0)}
-                          </span>
-                        </div>
-                        <div>
-                          <div className="font-semibold text-gray-900">{review.userName}</div>
-                          <div className="text-sm text-gray-500">{review.date}</div>
-                        </div>
-                      </div>
-                      <div className="flex">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`h-4 w-4 ${
-                              i < review.rating 
-                                ? 'text-yellow-500 fill-current' 
-                                : 'text-gray-300'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                    <p className="text-gray-700">{review.comment}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Booking Form */}
-          <div className="lg:col-span-1">
-            <BookingForm hotel={hotel} />
-          </div>
+        <div className="lg:col-span-1">
+          <BookingForm hotel={hotel} />
         </div>
       </div>
     </div>
@@ -179,5 +156,4 @@ const HotelDetailsPage: React.FC = () => {
 };
 
 export default HotelDetailsPage;
-
 
