@@ -1,11 +1,13 @@
 # seed.py
-from app import app, db, Hotel
+from app import app, db, Hotel, User
+from werkzeug.security import generate_password_hash
 
-def seed_hotels():
+def seed_data():
     # Drop and recreate tables
     db.drop_all()
     db.create_all()
 
+    # ----- Seed Hotels -----
     hotels = [
         Hotel(
             name="Sunset Resort",
@@ -57,11 +59,28 @@ def seed_hotels():
             image_url="https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=600&auto=format&fit=crop&q=80"
         ),
     ]
-
     db.session.bulk_save_objects(hotels)
+
+    # ----- Seed Users -----
+    users = [
+        User(
+            username="testuser",
+            email="user@example.com",
+            password_hash=generate_password_hash("password123"),
+            is_admin=False
+        ),
+        User(
+            username="admin",
+            email="admin@example.com",
+            password_hash=generate_password_hash("admin123"),
+            is_admin=True
+        )
+    ]
+    db.session.bulk_save_objects(users)
+
     db.session.commit()
-    print("✅ 7 Hotels seeded successfully!")
+    print("✅ Hotels and Users seeded successfully!")
 
 if __name__ == "__main__":
     with app.app_context():
-        seed_hotels()
+        seed_data()
