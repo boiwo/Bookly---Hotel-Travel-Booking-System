@@ -69,10 +69,11 @@ const HotelsPage: React.FC = () => {
           </div>
         ) : filteredHotels.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredHotels.slice(0, 3).map((hotel) => (
-              <HotelCard key={hotel.id} hotel={hotel} />
-            ))}
-          </div>
+  {filteredHotels.map((hotel) => (
+    <HotelCard key={hotel.id} hotel={hotel} />
+  ))}
+</div>
+
         ) : (
           <div className="text-center py-12 text-gray-500">
             No hotels found matching your criteria.
