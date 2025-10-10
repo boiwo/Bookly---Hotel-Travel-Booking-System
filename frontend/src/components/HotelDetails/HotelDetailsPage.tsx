@@ -37,7 +37,7 @@ const localHotels: Hotel[] = [
     amenities: ["WiFi", "Parking"],
   },
   {
-    id: 3,
+    id: 4,
     name: "Urban Chic Hotel",
     location: "New York, USA",
     price: 599,
@@ -67,7 +67,7 @@ const HotelDetailsPage: React.FC = () => {
         setLoading(false);
       } else {
         // Optional: fetch from backend if not in local data
-        fetch(`http://localhost:5000/api/hotels/${id}`)
+        fetch(`http://localhost:5001/api/hotels/${id}`)
           .then(res => {
             if (!res.ok) throw new Error("Hotel not found");
             return res.json();
