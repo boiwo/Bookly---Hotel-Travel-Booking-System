@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from datetime import datetime, timedelta
+from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 
 # ========== APP CONFIG ==========
@@ -12,6 +12,7 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///bookly.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
+
 
 # ========== MODELS ==========
 class User(db.Model):
@@ -43,8 +44,8 @@ class Hotel(db.Model):
     name = db.Column(db.String(120), nullable=False)
     location = db.Column(db.String(120), nullable=False)
     price = db.Column(db.Float, nullable=False)
-    description = db.Column(db.Text, nullable=True)
-    image_url = db.Column(db.String(255), nullable=True)
+    description = db.Column(db.Text)
+    image_url = db.Column(db.String(255))
 
     bookings = db.relationship("Booking", backref="hotel", lazy=True)
 
@@ -63,8 +64,8 @@ class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
     price = db.Column(db.Float, nullable=False)
-    description = db.Column(db.Text, nullable=True)
-    image_url = db.Column(db.String(255), nullable=True)
+    description = db.Column(db.Text)
+    image_url = db.Column(db.String(255))
 
     def as_dict(self):
         return {
@@ -87,6 +88,7 @@ class Booking(db.Model):
         return {
             "id": self.id,
             "user_id": self.user_id,
+            "user_name": self.user.username if self.user else None,
             "hotel_id": self.hotel_id,
             "hotel_name": self.hotel.name if self.hotel else None,
             "check_in": self.check_in.strftime("%Y-%m-%d"),
@@ -95,26 +97,47 @@ class Booking(db.Model):
 
 
 # ========== ROUTES ==========
-
 @app.route("/")
 def home():
-    return jsonify({"msg": "Welcome to Bookly API (No Auth)"})
+    return jsonify({"message": "Welcome to Bookly API"})
 
 
-# -------- USERS --------
+# -------- LOGIN ONLY --------
+@app.route("/api/login", methods=["POST"])
+def login_user():
+    data = request.json or {}
+
+    email = data.get("email")
+    password = data.get("password")
+
+    if not email or not password:
+        return jsonify({"error": "Email and password are required"}), 400
+
+    user = User.query.filter_by(email=email).first()
+
+    if not user:
+        return jsonify({"error": "User not found"}), 401
+
+    if not user.check_password(password):
+        return jsonify({"error": "Invalid password"}), 401
+
+    return jsonify({"message": "Login successful", "user": user.as_dict()}), 200
+
+
 @app.route("/api/users", methods=["GET"])
 def list_users():
-    return jsonify([u.as_dict() for u in User.query.all()])
+    users = User.query.all()
+    return jsonify([u.as_dict() for u in users])
 
 
 # -------- HOTELS --------
 @app.route("/api/hotels", methods=["POST"])
 def add_hotel():
-    data = request.json
+    data = request.json or {}
     hotel = Hotel(**data)
     db.session.add(hotel)
     db.session.commit()
-    return jsonify({"msg": "Hotel added", "hotel": hotel.as_dict()}), 201
+    return jsonify({"message": "Hotel added", "hotel": hotel.as_dict()}), 201
 
 
 @app.route("/api/hotels", methods=["GET"])
@@ -135,7 +158,7 @@ def update_hotel(id):
     for key, value in request.json.items():
         setattr(hotel, key, value)
     db.session.commit()
-    return jsonify({"msg": "Hotel updated", "hotel": hotel.as_dict()})
+    return jsonify({"message": "Hotel updated", "hotel": hotel.as_dict()})
 
 
 @app.route("/api/hotels/<int:id>", methods=["DELETE"])
@@ -143,17 +166,17 @@ def delete_hotel(id):
     hotel = Hotel.query.get_or_404(id)
     db.session.delete(hotel)
     db.session.commit()
-    return jsonify({"msg": "Hotel deleted"})
+    return jsonify({"message": "Hotel deleted"})
 
 
 # -------- PRODUCTS --------
 @app.route("/api/products", methods=["POST"])
 def add_product():
-    data = request.json
+    data = request.json or {}
     product = Product(**data)
     db.session.add(product)
     db.session.commit()
-    return jsonify({"msg": "Product added", "product": product.as_dict()}), 201
+    return jsonify({"message": "Product added", "product": product.as_dict()}), 201
 
 
 @app.route("/api/products", methods=["GET"])
@@ -173,7 +196,7 @@ def update_product(id):
     for key, value in request.json.items():
         setattr(product, key, value)
     db.session.commit()
-    return jsonify({"msg": "Product updated", "product": product.as_dict()})
+    return jsonify({"message": "Product updated", "product": product.as_dict()})
 
 
 @app.route("/api/products/<int:id>", methods=["DELETE"])
@@ -181,7 +204,7 @@ def delete_product(id):
     product = Product.query.get_or_404(id)
     db.session.delete(product)
     db.session.commit()
-    return jsonify({"msg": "Product deleted"})
+    return jsonify({"message": "Product deleted"})
 
 
 # -------- BOOKINGS --------
@@ -197,27 +220,28 @@ def create_booking():
         )
         db.session.add(booking)
         db.session.commit()
-        return jsonify({"msg": "Booking created", "booking": booking.as_dict()}), 201
+        return jsonify({"message": "Booking created", "booking": booking.as_dict()}), 201
     except Exception as e:
-        return jsonify({"msg": str(e)}), 400
+        return jsonify({"error": str(e)}), 400
 
 
 @app.route("/api/bookings", methods=["GET"])
-def get_bookings():
+def list_bookings():
     bookings = Booking.query.all()
     return jsonify([b.as_dict() for b in bookings])
 
 
 @app.route("/api/bookings/<int:id>", methods=["DELETE"])
-def cancel_booking(id):
+def delete_booking(id):
     booking = Booking.query.get_or_404(id)
     db.session.delete(booking)
     db.session.commit()
-    return jsonify({"msg": "Booking canceled"})
+    return jsonify({"message": "Booking deleted"})
 
 
 # ========== RUN APP ==========
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    print("🚀 Bookly API running on http://127.0.0.1:5001")
+    app.run(host="0.0.0.0", port=5001, debug=True)
